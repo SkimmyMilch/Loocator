@@ -1,0 +1,6 @@
+{
+  "name": "LooLocator - Toilet Review & Map",
+  "description": "Find, rate, and review toilets with detailed info on cleanliness, accessibility, bidet type, closet type, soap, fees, exact building floor/unit/wing location, and admin verification.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
