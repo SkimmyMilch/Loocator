@@ -2,7 +2,7 @@ import React from 'react';
 import { ToiletLocation, UserLocation } from '../types';
 import { calculateDistanceKm } from '../services/storageService';
 import { getBidetLabel, getClosetLabel } from '../utils/formatters';
-import { ShieldCheck, MapPin, Navigation, ArrowRight, Accessibility, Star } from 'lucide-react';
+import { ShieldCheck, MapPin, Navigation, ArrowRight, Star } from 'lucide-react';
 
 interface ToiletCardProps {
   toilet: ToiletLocation;
@@ -81,7 +81,7 @@ export const ToiletCard: React.FC<ToiletCardProps> = ({
               ? 'bg-red-200 text-red-950 font-black'
               : 'bg-pink-50 text-pink-900'
           }`}>
-            <span className="text-[9px] font-black uppercase tracking-wider">♀ FEMALE</span>
+            <span className="text-[9px] font-black uppercase tracking-wider">FEMALE</span>
             <span className="text-xs font-black">
               {toilet.ratingFemale !== undefined ? toilet.ratingFemale.toFixed(1) : '—'}
             </span>
@@ -94,7 +94,7 @@ export const ToiletCard: React.FC<ToiletCardProps> = ({
               ? 'bg-red-200 text-red-950 font-black'
               : 'bg-blue-50 text-blue-900'
           }`}>
-            <span className="text-[9px] font-black uppercase tracking-wider">♂ MALE</span>
+            <span className="text-[9px] font-black uppercase tracking-wider">MALE</span>
             <span className="text-xs font-black">
               {toilet.ratingMale !== undefined ? toilet.ratingMale.toFixed(1) : '—'}
             </span>
@@ -105,8 +105,7 @@ export const ToiletCard: React.FC<ToiletCardProps> = ({
               ? 'bg-purple-100 text-purple-950 font-black'
               : 'bg-purple-50 text-purple-900'
           }`}>
-            <span className="text-[9px] font-black uppercase tracking-wider flex items-center gap-0.5 justify-center">
-              <Accessibility className="w-2.5 h-2.5 stroke-[3]" />
+            <span className="text-[9px] font-black uppercase tracking-wider flex items-center justify-center">
               <span>NEUTRAL</span>
             </span>
             <span className="text-xs font-black">

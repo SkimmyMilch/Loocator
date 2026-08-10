@@ -28,8 +28,8 @@ export const AdminPanelModal: React.FC<AdminPanelModalProps> = ({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-3xl bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden my-auto flex flex-col max-h-[88vh] text-black">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
+      <div className="relative w-full max-w-3xl bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden my-auto flex flex-col max-h-[88dvh] sm:max-h-[90vh] text-black">
         
         {/* Header */}
         <div className="p-4 sm:p-5 bg-yellow-400 border-b-4 border-black flex items-center justify-between shrink-0">

@@ -4,7 +4,7 @@ import { getBidetLabel, getClosetLabel, getSoapLabel, getWetDryLabel } from '../
 import { calculateDistanceKm } from '../services/storageService';
 import {
   X, Star, ShieldCheck, ShieldAlert, MapPin, Navigation, Compass, CheckCircle2,
-  XCircle, Accessibility, MessageSquare, Plus, UserCheck
+  XCircle, MessageSquare, Plus, UserCheck
 } from 'lucide-react';
 
 interface ToiletDetailModalProps {
@@ -41,8 +41,8 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
   const wetDryInfo = getWetDryLabel(toilet.wetDry);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[92vh]">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
+      <div className="relative w-full max-w-2xl bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[92vh] my-auto">
         
         {/* Top Header Bar */}
         <div className="p-4 sm:p-5 bg-yellow-400 border-b-4 border-black flex items-start justify-between gap-3 shrink-0">
@@ -182,7 +182,7 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 pt-1">
               <div className="p-3 bg-pink-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-pink-900 uppercase">♀ FEMALE RESTROOM</p>
+                  <p className="text-[10px] font-black text-pink-900 uppercase">FEMALE RESTROOM</p>
                   <p className="text-xs font-bold text-pink-950">
                     {toilet.ratingFemale !== undefined
                       ? toilet.ratingFemale >= 4.0 ? 'Decent / Clean' : toilet.ratingFemale <= 2.0 ? 'Needs Attention' : 'Moderate'
@@ -202,7 +202,7 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
 
               <div className="p-3 bg-blue-100 border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] flex items-center justify-between">
                 <div>
-                  <p className="text-[10px] font-black text-blue-900 uppercase">♂ MALE RESTROOM</p>
+                  <p className="text-[10px] font-black text-blue-900 uppercase">MALE RESTROOM</p>
                   <p className="text-xs font-bold text-blue-950">
                     {toilet.ratingMale !== undefined
                       ? toilet.ratingMale >= 4.0 ? 'Decent / Clean' : toilet.ratingMale <= 2.0 ? 'Needs Attention' : 'Moderate'
@@ -292,7 +292,6 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
           {/* Accessibility Checklist Features */}
           <div className="p-3.5 bg-zinc-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
             <p className="text-xs font-black uppercase text-black flex items-center gap-1.5">
-              <Accessibility className="w-4 h-4 stroke-[3]" />
               <span>ACCESSIBILITY CHECKLIST</span>
             </p>
             <div className="grid grid-cols-2 gap-2 text-xs font-bold uppercase">
@@ -375,12 +374,12 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
                       <div className="flex items-center gap-2">
                         {rev.genderSection === 'Female' && (
                           <span className="px-2 py-0.5 bg-pink-100 text-pink-900 border-2 border-black text-[10px] font-black uppercase">
-                            ♀ FEMALE RESTROOM
+                            FEMALE RESTROOM
                           </span>
                         )}
                         {rev.genderSection === 'Male' && (
                           <span className="px-2 py-0.5 bg-blue-100 text-blue-900 border-2 border-black text-[10px] font-black uppercase">
-                            ♂ MALE RESTROOM
+                            MALE RESTROOM
                           </span>
                         )}
                         {rev.genderSection === 'Unisex' && (

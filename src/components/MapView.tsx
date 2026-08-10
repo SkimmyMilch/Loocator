@@ -1,13 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { ToiletLocation, MapTileStyle, UserLocation } from '../types';
-import { Crosshair, Plus, Minus } from 'lucide-react';
+import { Crosshair, Plus, Minus, Layers, Check } from 'lucide-react';
 
 interface MapViewProps {
   toilets: ToiletLocation[];
   selectedToiletId: string | null;
   onSelectToilet: (toilet: ToiletLocation) => void;
   tileStyle: MapTileStyle;
+  onChangeTileStyle?: (style: MapTileStyle) => void;
   isAddPinMode: boolean;
   onPinDropped?: (coords: { lat: number; lng: number }) => void;
   tempPinCoords?: { lat: number; lng: number } | null;
@@ -40,6 +41,7 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedToiletId,
   onSelectToilet,
   tileStyle,
+  onChangeTileStyle,
   isAddPinMode,
   onPinDropped,
   tempPinCoords,
@@ -47,6 +49,7 @@ export const MapView: React.FC<MapViewProps> = ({
   activeRouteDestination,
   onLocateMe,
 }) => {
+  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
@@ -306,8 +309,39 @@ export const MapView: React.FC<MapViewProps> = ({
     <div className="relative w-full h-full overflow-hidden">
       <div ref={mapContainerRef} className="w-full h-full z-0 bg-slate-100" />
 
-      {/* Map Controls Group (Locate Me, Zoom In, Zoom Out) - Placed at bottom right, aligned vertically with matching dimensions */}
-      <div className="absolute right-4 bottom-6 z-[400] flex flex-col items-center gap-2 pointer-events-auto">
+      {/* Map Controls Group (Style Switcher, Locate Me, Zoom In, Zoom Out) */}
+      <div className="absolute right-3.5 sm:right-4 bottom-6 z-10 flex flex-col items-center gap-2 pointer-events-auto">
+        {/* Map Tile Style Switcher */}
+        {onChangeTileStyle && (
+          <div className="relative group">
+            <button
+              onClick={() => setIsStyleMenuOpen(!isStyleMenuOpen)}
+              className="w-10 h-10 bg-white text-black border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 active:translate-x-0.5 active:translate-y-0.5 transition-all flex items-center justify-center font-black"
+              title="Change Map Style"
+            >
+              <Layers className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            
+            <div className={`absolute right-full top-0 mr-2 ${isStyleMenuOpen ? 'flex' : 'hidden'} group-hover:flex flex-col bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-1.5 w-36 sm:w-40 gap-1 z-50`}>
+              {(['dark', 'standard', 'satellite', 'outdoors'] as MapTileStyle[]).map((style) => (
+                <button
+                  key={style}
+                  onClick={() => {
+                    onChangeTileStyle(style);
+                    setIsStyleMenuOpen(false);
+                  }}
+                  className={`px-3 py-1.5 text-xs font-black uppercase text-left flex items-center justify-between border-2 border-transparent ${
+                    tileStyle === style ? 'bg-black text-white border-black' : 'text-black hover:bg-yellow-300'
+                  }`}
+                >
+                  <span>{style}</span>
+                  {tileStyle === style && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Locate Me Button */}
         {onLocateMe && (
           <button

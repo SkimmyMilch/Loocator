@@ -1,6 +1,6 @@
 import React from 'react';
 import { FilterState, BidetType, ClosetType, SoapStatus, WetDryType } from '../types';
-import { X, SlidersHorizontal, RotateCcw, Check, Sparkles, Star, Accessibility } from 'lucide-react';
+import { X, SlidersHorizontal, RotateCcw, Check, Sparkles, Star } from 'lucide-react';
 
 interface FilterDrawerProps {
   filters: FilterState;
@@ -18,8 +18,8 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
   totalMatchingCount,
 }) => {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
-      <div className="relative w-full max-w-md h-full bg-white border-l-4 border-black shadow-[8px_0px_0px_0px_rgba(0,0,0,1)] flex flex-col text-black">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-end bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
+      <div className="relative w-full max-w-md h-full max-h-[100dvh] bg-white border-l-4 border-black shadow-[8px_0px_0px_0px_rgba(0,0,0,1)] flex flex-col text-black">
         
         {/* Top Header */}
         <div className="p-4 bg-yellow-400 border-b-4 border-black flex items-center justify-between shrink-0">
@@ -56,7 +56,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             <div className="grid grid-cols-2 gap-2">
               {[
                 { id: 'cleanliness', label: '⭐ Cleanliness' },
-                { id: 'accessibility', label: '♿ Accessibility' },
+                { id: 'accessibility', label: 'Accessibility' },
                 { id: 'verified', label: '✔️ Verified First' },
                 { id: 'reviews', label: '💬 Most Reviewed' },
                 { id: 'price', label: '💵 Free / Cheapest' },
@@ -87,10 +87,10 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { id: 'any', label: '🚻 ALL SECTIONS' },
-                { id: 'Female', label: '♀ FEMALE TOILETS' },
-                { id: 'Male', label: '♂ MALE TOILETS' },
-                { id: 'Neutral/Accessible', label: '♿ NEUTRAL / ACCESSIBLE' },
+                { id: 'any', label: 'ALL SECTIONS' },
+                { id: 'Female', label: 'FEMALE TOILETS' },
+                { id: 'Male', label: 'MALE TOILETS' },
+                { id: 'Neutral/Accessible', label: 'NEUTRAL / ACCESSIBLE' },
               ].map((g) => (
                 <button
                   key={g.id}
@@ -135,7 +135,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
           {/* Accessibility Rating Filter */}
           <div className="p-3.5 bg-zinc-100 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
             <div className="flex justify-between items-center">
-              <span className="text-black font-black">MIN ACCESSIBILITY RATING ♿</span>
+              <span className="text-black font-black">MIN ACCESSIBILITY RATING</span>
               <span className="text-black font-black bg-yellow-400 px-2 py-0.5 border border-black">
                 {filters.minAccessibility === 0 ? 'Any Rating' : `${filters.minAccessibility}+ Stars`}
               </span>
@@ -247,7 +247,7 @@ export const FilterDrawer: React.FC<FilterDrawerProps> = ({
             </label>
 
             <label className="flex items-center justify-between cursor-pointer">
-              <span className="text-black">♿ Wheelchair Accessible Stall</span>
+              <span className="text-black">Wheelchair Accessible Stall</span>
               <input
                 type="checkbox"
                 checked={filters.wheelchairOnly}

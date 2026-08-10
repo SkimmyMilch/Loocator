@@ -18,6 +18,7 @@ import { AddToiletModal } from './components/AddToiletModal';
 import { FilterDrawer } from './components/FilterDrawer';
 import { AdminPanelModal } from './components/AdminPanelModal';
 import { DirectionsModal } from './components/DirectionsModal';
+import { AdminAuthModal } from './components/AdminAuthModal';
 import {
   ListFilter, PanelLeftClose, PanelLeft, MapPin, Sparkles, Navigation, Plus, ShieldCheck, RefreshCw
 } from 'lucide-react';
@@ -51,7 +52,10 @@ export default function App() {
   const [tempDroppedPinCoords, setTempDroppedPinCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Admin Mode
-  const [isAdmin, setIsAdmin] = useState<boolean>(true);
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    return localStorage.getItem('loo_is_admin_authenticated') === 'true';
+  });
+  const [isAdminAuthModalOpen, setIsAdminAuthModalOpen] = useState<boolean>(false);
 
   // User Geolocation
   const [userLocation, setUserLocation] = useState<UserLocation | null>({
@@ -198,7 +202,7 @@ export default function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
+    <div className="relative w-full h-[100dvh] max-w-full overflow-hidden bg-slate-950 text-slate-100 flex flex-col font-sans select-none">
       
       {/* Top Navbar */}
       <Navbar
@@ -220,16 +224,23 @@ export default function App() {
         onChangeTileStyle={setTileStyle}
         isAdmin={isAdmin}
         onToggleAdmin={() => {
-          setIsAdmin(!isAdmin);
-          setToastMessage(
-            !isAdmin
-              ? '🛡️ Admin Mode Enabled! You can now grant/revoke Verified Badges.'
-              : 'User Mode Enabled.'
-          );
+          if (isAdmin) {
+            setIsAdmin(false);
+            localStorage.removeItem('loo_is_admin_authenticated');
+            setToastMessage('🔒 Admin mode logged out. Switched to User Mode.');
+          } else {
+            setIsAdminAuthModalOpen(true);
+          }
         }}
         onLocateMe={handleLocateMe}
         totalResultsCount={filteredToilets.length}
-        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        onOpenAdminPanel={() => {
+          if (isAdmin) {
+            setIsAdminPanelOpen(true);
+          } else {
+            setIsAdminAuthModalOpen(true);
+          }
+        }}
       />
 
       {/* Main Container */}
@@ -237,7 +248,7 @@ export default function App() {
         
         {/* Left Google Maps Style Sidebar Drawer */}
         <div
-          className={`absolute sm:relative z-20 top-28 sm:top-0 bottom-0 left-0 w-full sm:w-96 md:w-[420px] bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 shadow-2xl flex flex-col transition-all duration-300 ${
+          className={`absolute sm:relative z-20 top-[96px] sm:top-0 bottom-0 left-0 right-0 sm:right-auto w-full sm:w-96 md:w-[420px] bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 shadow-2xl flex flex-col transition-all duration-300 ${
             isSidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0 sm:w-0 sm:border-0'
           }`}
         >
@@ -324,6 +335,7 @@ export default function App() {
               }
             }}
             tileStyle={tileStyle}
+            onChangeTileStyle={setTileStyle}
             isAddPinMode={isAddPinMode}
             onPinDropped={handlePinDroppedOnMap}
             tempPinCoords={tempDroppedPinCoords}
@@ -336,10 +348,10 @@ export default function App() {
           {!isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute z-20 bottom-6 left-4 bg-black text-white border-2 border-black font-black text-xs uppercase px-4 py-2.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 hover:text-black transition-all flex items-center gap-2"
+              className="absolute z-20 bottom-6 left-3.5 sm:left-4 bg-black text-white border-2 border-black font-black text-xs uppercase px-3 py-2 sm:px-4 sm:py-2.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 hover:text-black transition-all flex items-center gap-1.5 max-w-[calc(100vw-130px)] truncate"
             >
-              <ListFilter className="w-4 h-4 stroke-[3]" />
-              <span>STATION LIST ({filteredToilets.length})</span>
+              <ListFilter className="w-4 h-4 stroke-[3] shrink-0" />
+              <span className="truncate">STATION LIST ({filteredToilets.length})</span>
             </button>
           )}
         </div>
@@ -347,7 +359,7 @@ export default function App() {
 
       {/* Floating Notification Toast */}
       {toastMessage && (
-        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 bg-black text-white border-2 border-black px-4 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-xs font-black uppercase flex items-center gap-2 animate-bounce">
+        <div className="absolute bottom-20 sm:bottom-6 left-1/2 -translate-x-1/2 z-30 bg-black text-white border-2 border-black px-3.5 py-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] text-[11px] sm:text-xs font-black uppercase flex items-center gap-2 animate-bounce max-w-[85vw] text-center justify-center pointer-events-none">
           <span>{toastMessage}</span>
         </div>
       )}
@@ -402,6 +414,18 @@ export default function App() {
           onResetFilters={handleResetFilters}
           onClose={() => setIsFilterDrawerOpen(false)}
           totalMatchingCount={filteredToilets.length}
+        />
+      )}
+
+      {/* Admin Auth Password Modal */}
+      {isAdminAuthModalOpen && (
+        <AdminAuthModal
+          onClose={() => setIsAdminAuthModalOpen(false)}
+          onSuccess={() => {
+            setIsAdmin(true);
+            setIsAdminAuthModalOpen(false);
+            setToastMessage('🛡️ Admin Mode Unlocked! Password verified.');
+          }}
         />
       )}
 
