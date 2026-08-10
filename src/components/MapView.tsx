@@ -256,8 +256,10 @@ export const MapView: React.FC<MapViewProps> = ({
         className: 'user-location-marker',
         html: `
           <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
-            <div class="w-6 h-6 bg-blue-500/40 border-2 border-black rounded-full animate-ping absolute"></div>
-            <div class="w-4 h-4 bg-black border-2 border-blue-500 rounded-full shadow-md"></div>
+            <div class="w-8 h-8 bg-blue-500/40 border-2 border-black rounded-full animate-ping absolute"></div>
+            <div class="w-5 h-5 bg-blue-600 border-2 border-black rounded-full shadow-md flex items-center justify-center text-white text-[9px] font-black">
+              YOU
+            </div>
           </div>
         `,
         iconSize: [0, 0],
@@ -268,6 +270,12 @@ export const MapView: React.FC<MapViewProps> = ({
       } else {
         userMarkerRef.current.setLatLng([userLocation.lat, userLocation.lng]);
       }
+
+      // Fly smoothly to user location on update
+      map.flyTo([userLocation.lat, userLocation.lng], 16, {
+        animate: true,
+        duration: 1.2,
+      });
     } else if (userMarkerRef.current) {
       map.removeLayer(userMarkerRef.current);
       userMarkerRef.current = null;

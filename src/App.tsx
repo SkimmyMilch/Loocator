@@ -3,6 +3,8 @@ import { ToiletLocation, Review, FilterState, MapTileStyle, UserLocation } from 
 import {
   getStoredToilets,
   getStoredReviews,
+  subscribeToToilets,
+  subscribeToReviews,
   addToiletLocation,
   addReviewToToilet,
   toggleAdminVerifyToilet,
@@ -79,12 +81,25 @@ export default function App() {
   // Notification Toast
   const [toastMessage, setToastMessage] = useState<string | null>('Clean flat map loaded. Tap any station pin for details.');
 
-  // Load Data on Mount
+  // Load Data & Subscribe to Firestore Real-time Updates on Mount
   useEffect(() => {
-    const loadedToilets = getStoredToilets();
-    const loadedReviews = getStoredReviews();
-    setToilets(loadedToilets);
-    setReviews(loadedReviews);
+    // Initial local cache load
+    setToilets(getStoredToilets());
+    setReviews(getStoredReviews());
+
+    // Subscribe to Firestore changes across all devices
+    const unsubscribeToilets = subscribeToToilets((updatedToilets) => {
+      setToilets(updatedToilets);
+    });
+
+    const unsubscribeReviews = subscribeToReviews((updatedReviews) => {
+      setReviews(updatedReviews);
+    });
+
+    return () => {
+      unsubscribeToilets();
+      unsubscribeReviews();
+    };
   }, []);
 
   // Auto-hide Toast
@@ -98,19 +113,52 @@ export default function App() {
   // Handle Geolocation
   const handleLocateMe = () => {
     if ('geolocation' in navigator) {
+      setToastMessage('🛰️ Requesting device GPS location...');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          const userPos = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            addressName: 'Your Device Location',
+          };
           setUserLocation(userPos);
-          setToastMessage('📍 Located your position on the map!');
+          setToastMessage(`📍 Located your device at (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
         },
         (err) => {
           console.warn('Geolocation error:', err);
-          setToastMessage('📍 Using default location (Grand Indonesia Area).');
-        }
+          let errMsg = 'Location permission denied or unavailable.';
+          if (err.code === err.PERMISSION_DENIED) {
+            errMsg = 'Location permission denied. Please allow location access in browser.';
+          } else if (err.code === err.TIMEOUT) {
+            errMsg = 'Location request timed out. Please try again.';
+          }
+          setToastMessage(`⚠️ ${errMsg}`);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
+    } else {
+      setToastMessage('⚠️ Geolocation is not supported by your browser.');
     }
   };
+
+  // Auto-detect device location on mount if allowed
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            addressName: 'Your Device Location',
+          });
+        },
+        (err) => {
+          console.log('Initial location permission prompt response:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+      );
+    }
+  }, []);
 
   // Filter Toilets
   const filteredToilets = filterToilets(
@@ -158,28 +206,24 @@ export default function App() {
     setIsAddPinMode(false);
   };
 
-  const handleCreateToilet = (
+  const handleCreateToilet = async (
     data: Omit<ToiletLocation, 'id' | 'createdAt' | 'updatedAt' | 'totalReviews' | 'ratingCleanliness' | 'ratingAccessibility'>
   ) => {
-    const newToilet = addToiletLocation(data);
-    setToilets(getStoredToilets());
+    const newToilet = await addToiletLocation(data);
     setSelectedToiletId(newToilet.id);
     setIsDetailModalOpen(true);
     setToastMessage(`✨ Added toilet location: ${newToilet.name}`);
   };
 
-  const handleCreateReview = (
+  const handleCreateReview = async (
     reviewData: Omit<Review, 'id' | 'createdAt' | 'helpfulCount'>
   ) => {
-    const { review, updatedToilet } = addReviewToToilet(reviewData);
-    setToilets(getStoredToilets());
-    setReviews(getStoredReviews());
+    const { review, updatedToilet } = await addReviewToToilet(reviewData, toilets, reviews);
     setToastMessage(`💬 Review published for ${updatedToilet.name}! Ratings updated.`);
   };
 
-  const handleAdminToggleVerify = (toiletId: string, isVerified: boolean, note?: string) => {
-    const updated = toggleAdminVerifyToilet(toiletId, isVerified, note);
-    setToilets(getStoredToilets());
+  const handleAdminToggleVerify = async (toiletId: string, isVerified: boolean, note?: string) => {
+    const updated = await toggleAdminVerifyToilet(toiletId, isVerified, toilets, note);
     setToastMessage(
       isVerified
         ? `✔️ Verified Badge granted to ${updated.name}!`
@@ -193,10 +237,8 @@ export default function App() {
     setToastMessage(`🚗 Calculating walking route to ${toilet.name}...`);
   };
 
-  const handleResetDemoData = () => {
-    resetStorageToDefaults();
-    setToilets(getStoredToilets());
-    setReviews(getStoredReviews());
+  const handleResetDemoData = async () => {
+    await resetStorageToDefaults();
     setSelectedToiletId('loo-gi-l3-west');
     setToastMessage('🔄 Demo data reset to initial benchmark toilets.');
   };

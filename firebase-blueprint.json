@@ -1,0 +1,62 @@
+{
+  "entities": {
+    "toilets": {
+      "title": "Toilet Location",
+      "description": "Public toilet locations added by users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "buildingName": { "type": "string" },
+        "floor": { "type": "string" },
+        "unitWing": { "type": "string" },
+        "placeType": { "type": "string" },
+        "isPaid": { "type": "boolean" },
+        "priceAmount": { "type": "string" },
+        "bidetType": { "type": "string" },
+        "closetType": { "type": "string" },
+        "wetDry": { "type": "string" },
+        "soapStatus": { "type": "string" },
+        "genderTypes": { "type": "array", "items": { "type": "string" } },
+        "accessibilityFeatures": { "type": "object" },
+        "hasBabyChanging": { "type": "boolean" },
+        "coordinates": { "type": "object" },
+        "addedBy": { "type": "string" },
+        "ratingCleanliness": { "type": "number" },
+        "ratingAccessibility": { "type": "number" },
+        "ratingMale": { "type": "number" },
+        "ratingFemale": { "type": "number" },
+        "ratingUnisex": { "type": "number" },
+        "totalReviews": { "type": "number" },
+        "isVerified": { "type": "boolean" },
+        "verifiedAt": { "type": "string" },
+        "verifiedBy": { "type": "string" },
+        "adminNote": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "notes": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "buildingName", "floor", "placeType", "coordinates", "createdAt"]
+    },
+    "reviews": {
+      "title": "Toilet Review",
+      "description": "User reviews for toilet locations",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "toiletId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorGender": { "type": "string" },
+        "genderSection": { "type": "string" },
+        "ratingCleanliness": { "type": "number" },
+        "ratingAccessibility": { "type": "number" },
+        "comment": { "type": "string" },
+        "photoUrl": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "helpfulCount": { "type": "number" }
+      },
+      "required": ["id", "toiletId", "ratingCleanliness", "ratingAccessibility", "createdAt"]
+    }
+  }
+}

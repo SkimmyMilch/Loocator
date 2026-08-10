@@ -1,31 +1,40 @@
-import { ToiletLocation, Review, FilterState, BidetType, ClosetType, SoapStatus, WetDryType } from '../types';
+import { ToiletLocation, Review, FilterState } from '../types';
 import { INITIAL_TOILETS, INITIAL_REVIEWS } from '../data/initialToilets';
+import { db } from '../lib/firebase';
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  updateDoc,
+  getDocs,
+  writeBatch
+} from 'firebase/firestore';
 
 const STORAGE_KEYS = {
   TOILETS: 'loolocator_toilets_v1',
   REVIEWS: 'loolocator_reviews_v1',
-  ADMIN_AUTH: 'loolocator_admin_auth_v1',
 };
 
+// Local storage caching helpers
 export const getStoredToilets = (): ToiletLocation[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.TOILETS);
     if (!raw) {
-      saveToilets(INITIAL_TOILETS);
       return INITIAL_TOILETS;
     }
     return JSON.parse(raw);
   } catch (err) {
-    console.error('Failed to load toilets from storage:', err);
+    console.error('Failed to load toilets from local storage:', err);
     return INITIAL_TOILETS;
   }
 };
 
-export const saveToilets = (toilets: ToiletLocation[]): void => {
+export const saveToiletsToLocal = (toilets: ToiletLocation[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.TOILETS, JSON.stringify(toilets));
   } catch (err) {
-    console.error('Failed to save toilets:', err);
+    console.error('Failed to save toilets to local storage:', err);
   }
 };
 
@@ -33,31 +42,104 @@ export const getStoredReviews = (): Review[] => {
   try {
     const raw = localStorage.getItem(STORAGE_KEYS.REVIEWS);
     if (!raw) {
-      saveReviews(INITIAL_REVIEWS);
       return INITIAL_REVIEWS;
     }
     return JSON.parse(raw);
   } catch (err) {
-    console.error('Failed to load reviews from storage:', err);
+    console.error('Failed to load reviews from local storage:', err);
     return INITIAL_REVIEWS;
   }
 };
 
-export const saveReviews = (reviews: Review[]): void => {
+export const saveReviewsToLocal = (reviews: Review[]): void => {
   try {
     localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(reviews));
   } catch (err) {
-    console.error('Failed to save reviews:', err);
+    console.error('Failed to save reviews to local storage:', err);
   }
 };
 
-export const addToiletLocation = (newToilet: Omit<ToiletLocation, 'id' | 'createdAt' | 'updatedAt' | 'totalReviews' | 'ratingCleanliness' | 'ratingAccessibility'>): ToiletLocation => {
-  const toilets = getStoredToilets();
+// Seed Firestore with initial data if empty
+const seedFirestoreIfEmpty = async () => {
+  try {
+    const toiletsSnap = await getDocs(collection(db, 'toilets'));
+    if (toiletsSnap.empty) {
+      console.log('Firestore toilets collection is empty. Seeding initial toilets & reviews...');
+      const batch = writeBatch(db);
+      
+      INITIAL_TOILETS.forEach(t => {
+        const ref = doc(db, 'toilets', t.id);
+        batch.set(ref, t);
+      });
+
+      INITIAL_REVIEWS.forEach(r => {
+        const ref = doc(db, 'reviews', r.id);
+        batch.set(ref, r);
+      });
+
+      await batch.commit();
+      console.log('Successfully seeded Firestore with initial dataset!');
+    }
+  } catch (err) {
+    console.error('Error seeding Firestore:', err);
+  }
+};
+
+// Subscribe to real-time Toilets collection from Firestore
+export const subscribeToToilets = (onUpdate: (toilets: ToiletLocation[]) => void) => {
+  seedFirestoreIfEmpty();
+
+  const toiletsRef = collection(db, 'toilets');
+  return onSnapshot(
+    toiletsRef,
+    (snapshot) => {
+      if (!snapshot.empty) {
+        const items: ToiletLocation[] = snapshot.docs.map(doc => doc.data() as ToiletLocation);
+        saveToiletsToLocal(items);
+        onUpdate(items);
+      } else {
+        // If snapshot is empty, fallback to local/initial
+        onUpdate(getStoredToilets());
+      }
+    },
+    (error) => {
+      console.warn('Firestore subscription error for toilets, falling back to local cache:', error);
+      onUpdate(getStoredToilets());
+    }
+  );
+};
+
+// Subscribe to real-time Reviews collection from Firestore
+export const subscribeToReviews = (onUpdate: (reviews: Review[]) => void) => {
+  const reviewsRef = collection(db, 'reviews');
+  return onSnapshot(
+    reviewsRef,
+    (snapshot) => {
+      if (!snapshot.empty) {
+        const items: Review[] = snapshot.docs.map(doc => doc.data() as Review);
+        saveReviewsToLocal(items);
+        onUpdate(items);
+      } else {
+        onUpdate(getStoredReviews());
+      }
+    },
+    (error) => {
+      console.warn('Firestore subscription error for reviews, falling back to local cache:', error);
+      onUpdate(getStoredReviews());
+    }
+  );
+};
+
+// Add new toilet location
+export const addToiletLocation = async (
+  newToilet: Omit<ToiletLocation, 'id' | 'createdAt' | 'updatedAt' | 'totalReviews' | 'ratingCleanliness' | 'ratingAccessibility'>
+): Promise<ToiletLocation> => {
   const now = new Date().toISOString();
+  const id = `loo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
   
   const toilet: ToiletLocation = {
     ...newToilet,
-    id: `loo-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    id,
     ratingCleanliness: 4.0, // default starting average
     ratingAccessibility: 4.0,
     totalReviews: 0,
@@ -65,27 +147,39 @@ export const addToiletLocation = (newToilet: Omit<ToiletLocation, 'id' | 'create
     updatedAt: now,
   };
 
+  // Write to Firestore first
+  try {
+    await setDoc(doc(db, 'toilets', id), toilet);
+  } catch (err) {
+    console.error('Failed to save new toilet to Firestore:', err);
+  }
+
+  // Fallback update local storage
+  const toilets = getStoredToilets();
   const updatedToilets = [toilet, ...toilets];
-  saveToilets(updatedToilets);
+  saveToiletsToLocal(updatedToilets);
+
   return toilet;
 };
 
-export const addReviewToToilet = (reviewData: Omit<Review, 'id' | 'createdAt' | 'helpfulCount'>): { review: Review; updatedToilet: ToiletLocation } => {
-  const reviews = getStoredReviews();
-  const toilets = getStoredToilets();
-
+// Add review to toilet and update toilet ratings
+export const addReviewToToilet = async (
+  reviewData: Omit<Review, 'id' | 'createdAt' | 'helpfulCount'>,
+  currentToilets: ToiletLocation[],
+  currentReviews: Review[]
+): Promise<{ review: Review; updatedToilet: ToiletLocation }> => {
   const now = new Date().toISOString();
+  const reviewId = `rev-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
   const review: Review = {
     ...reviewData,
-    id: `rev-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+    id: reviewId,
     createdAt: now,
     helpfulCount: 0,
   };
 
-  const updatedReviews = [review, ...reviews];
-  saveReviews(updatedReviews);
+  const updatedReviews = [review, ...currentReviews];
 
-  // Recalculate toilet rating averages
+  // Recalculate target toilet ratings
   const toiletReviews = updatedReviews.filter(r => r.toiletId === reviewData.toiletId);
   const sumCleanliness = toiletReviews.reduce((acc, r) => acc + r.ratingCleanliness, 0);
   const sumAccessibility = toiletReviews.reduce((acc, r) => acc + r.ratingAccessibility, 0);
@@ -93,7 +187,7 @@ export const addReviewToToilet = (reviewData: Omit<Review, 'id' | 'createdAt' | 
   const maleReviews = toiletReviews.filter(r => r.genderSection === 'Male');
   const femaleReviews = toiletReviews.filter(r => r.genderSection === 'Female');
 
-  const targetToilet = toilets.find(t => t.id === reviewData.toiletId);
+  const targetToilet = currentToilets.find(t => t.id === reviewData.toiletId);
   if (!targetToilet) {
     throw new Error('Toilet not found');
   }
@@ -116,33 +210,61 @@ export const addReviewToToilet = (reviewData: Omit<Review, 'id' | 'createdAt' | 
     updatedAt: now,
   };
 
-  const updatedToiletsList = toilets.map(t => t.id === updatedToilet.id ? updatedToilet : t);
-  saveToilets(updatedToiletsList);
+  // Write review and updated toilet to Firestore
+  try {
+    const batch = writeBatch(db);
+    batch.set(doc(db, 'reviews', reviewId), review);
+    batch.set(doc(db, 'toilets', updatedToilet.id), updatedToilet);
+    await batch.commit();
+  } catch (err) {
+    console.error('Failed to sync review & toilet rating to Firestore:', err);
+  }
+
+  // Update local storage
+  saveReviewsToLocal(updatedReviews);
+  const updatedToiletsList = currentToilets.map(t => t.id === updatedToilet.id ? updatedToilet : t);
+  saveToiletsToLocal(updatedToiletsList);
 
   return { review, updatedToilet };
 };
 
 // Admin Action: Verify or Unverify Toilet
-export const toggleAdminVerifyToilet = (toiletId: string, isVerified: boolean, adminNote?: string): ToiletLocation => {
-  const toilets = getStoredToilets();
-  const targetIndex = toilets.findIndex(t => t.id === toiletId);
-  
-  if (targetIndex === -1) {
+export const toggleAdminVerifyToilet = async (
+  toiletId: string,
+  isVerified: boolean,
+  currentToilets: ToiletLocation[],
+  adminNote?: string
+): Promise<ToiletLocation> => {
+  const target = currentToilets.find(t => t.id === toiletId);
+  if (!target) {
     throw new Error('Toilet not found');
   }
 
   const now = new Date().toISOString();
   const updatedToilet: ToiletLocation = {
-    ...toilets[targetIndex],
+    ...target,
     isVerified,
     verifiedAt: isVerified ? now : undefined,
     verifiedBy: isVerified ? 'LooLocator Official Admin' : undefined,
-    adminNote: adminNote !== undefined ? adminNote : toilets[targetIndex].adminNote,
+    adminNote: adminNote !== undefined ? adminNote : target.adminNote,
     updatedAt: now,
   };
 
-  toilets[targetIndex] = updatedToilet;
-  saveToilets(toilets);
+  try {
+    await updateDoc(doc(db, 'toilets', toiletId), {
+      isVerified,
+      verifiedAt: isVerified ? now : null,
+      verifiedBy: isVerified ? 'LooLocator Official Admin' : null,
+      adminNote: adminNote !== undefined ? adminNote : (target.adminNote || null),
+      updatedAt: now,
+    });
+  } catch (err) {
+    console.error('Failed to update admin verification in Firestore:', err);
+  }
+
+  const updatedToilets = currentToilets.map(t => t.id === toiletId ? updatedToilet : t);
+  saveToiletsToLocal(updatedToilets);
+
   return updatedToilet;
 };
 
@@ -277,7 +399,20 @@ export const filterToilets = (toilets: ToiletLocation[], filters: FilterState, u
   });
 };
 
-export const resetStorageToDefaults = (): void => {
-  localStorage.setItem(STORAGE_KEYS.TOILETS, JSON.stringify(INITIAL_TOILETS));
-  localStorage.setItem(STORAGE_KEYS.REVIEWS, JSON.stringify(INITIAL_REVIEWS));
+export const resetStorageToDefaults = async (): Promise<void> => {
+  saveToiletsToLocal(INITIAL_TOILETS);
+  saveReviewsToLocal(INITIAL_REVIEWS);
+
+  try {
+    const batch = writeBatch(db);
+    INITIAL_TOILETS.forEach(t => {
+      batch.set(doc(db, 'toilets', t.id), t);
+    });
+    INITIAL_REVIEWS.forEach(r => {
+      batch.set(doc(db, 'reviews', r.id), r);
+    });
+    await batch.commit();
+  } catch (err) {
+    console.error('Failed to reset Firestore to defaults:', err);
+  }
 };
