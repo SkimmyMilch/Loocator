@@ -80,7 +80,7 @@ export default function App() {
   const [isDirectionsModalOpen, setIsDirectionsModalOpen] = useState<boolean>(false);
 
   // Notification Toast
-  const [toastMessage, setToastMessage] = useState<string | null>('Clean flat map loaded. Tap any station pin for details.');
+  const [toastMessage, setToastMessage] = useState<string | null>('Tap any station pin for details.');
 
   // Load Data & Subscribe to Firestore Real-time Updates on Mount
   useEffect(() => {
@@ -318,31 +318,37 @@ export default function App() {
             setIsAdminAuthModalOpen(true);
           }
         }}
+        isSidebarOpen={isSidebarOpen}
+        onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />
 
-      {/* Main Container */}
+      {/* Main Container below Header */}
       <div className="relative flex-1 w-full h-full overflow-hidden flex">
         
-        {/* Left Google Maps Style Sidebar Drawer */}
+        {/* Left Google Maps Style Sidebar Panel */}
         <div
-          className={`absolute sm:relative z-20 top-[96px] sm:top-0 bottom-0 left-0 right-0 sm:right-auto w-full sm:w-96 md:w-[420px] bg-slate-900/95 backdrop-blur-xl border-r border-slate-800 shadow-2xl flex flex-col transition-all duration-300 ${
-            isSidebarOpen ? 'translate-x-0' : '-translate-x-full sm:translate-x-0 sm:w-0 sm:border-0'
+          className={`h-full bg-slate-900 border-r-4 border-black shadow-2xl flex flex-col transition-all duration-300 z-20 shrink-0 overflow-hidden ${
+            isSidebarOpen
+              ? 'absolute sm:relative inset-y-0 left-0 w-full sm:w-80 md:w-[380px] lg:w-[420px] translate-x-0 opacity-100'
+              : 'absolute sm:relative inset-y-0 left-0 w-0 -translate-x-full opacity-0 pointer-events-none border-r-0'
           }`}
         >
           {/* Sidebar Top Status & Sort Bar */}
-          <div className="p-3.5 bg-slate-950/80 border-b border-slate-800 flex items-center justify-between shrink-0">
+          <div className="p-3 bg-slate-950 border-b-2 border-black flex items-center justify-between shrink-0">
             <div className="flex items-center gap-2 text-xs">
-              <span className="font-bold text-slate-200">Nearby Toilet Locations</span>
-              <span className="bg-sky-500/20 text-sky-300 px-2 py-0.5 rounded-full font-mono text-[10px] border border-sky-500/30">
-                {filteredToilets.length} Loos
+              <span className="font-black text-white uppercase tracking-tight">Nearby Stations</span>
+              <span className="bg-yellow-400 text-black px-2 py-0.5 font-black text-[10px] border border-black">
+                {filteredToilets.length} STATIONS
               </span>
             </div>
 
             <button
               onClick={() => setIsSidebarOpen(false)}
-              className="sm:hidden p-1 text-slate-400 hover:text-white"
+              className="p-1 bg-yellow-400 text-black border border-black hover:bg-white transition-all font-black flex items-center gap-1 text-xs"
+              title="Hide Panel"
             >
-              <PanelLeftClose className="w-5 h-5" />
+              <PanelLeftClose className="w-4 h-4 stroke-[3]" />
+              <span className="hidden sm:inline font-black text-[10px] uppercase">HIDE</span>
             </button>
           </div>
 
@@ -388,15 +394,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Desktop Sidebar Toggle Floating Button */}
-        <button
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="hidden sm:flex absolute z-20 left-3 bottom-8 p-2.5 bg-slate-900/90 border border-slate-700 text-slate-200 hover:text-white rounded-2xl shadow-2xl backdrop-blur-md transition-all hover:scale-105"
-          title={isSidebarOpen ? 'Collapse Sidebar' : 'Expand Sidebar'}
-        >
-          {isSidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeft className="w-5 h-5" />}
-        </button>
-
         {/* Map View Canvas */}
         <div className="flex-1 w-full h-full relative">
           <MapView
@@ -421,14 +418,15 @@ export default function App() {
             onLocateMe={handleLocateMe}
           />
 
-          {/* Floating Map List Switcher Button */}
+          {/* Floating Map List Switcher Button at Bottom when Sidebar is Closed */}
           {!isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="absolute z-20 bottom-6 left-3.5 sm:left-4 bg-black text-white border-2 border-black font-black text-xs uppercase px-3 py-2 sm:px-4 sm:py-2.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-yellow-400 hover:text-black transition-all flex items-center gap-1.5 max-w-[calc(100vw-130px)] truncate"
+              className="absolute z-20 bottom-6 left-4 sm:left-6 bg-yellow-400 text-black border-2 border-black font-black text-xs uppercase px-4 py-2.5 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:bg-black hover:text-yellow-400 transition-all flex items-center gap-2 cursor-pointer active:translate-x-0.5 active:translate-y-0.5"
+              title="Show Stations Panel"
             >
-              <ListFilter className="w-4 h-4 stroke-[3] shrink-0" />
-              <span className="truncate">STATION LIST ({filteredToilets.length})</span>
+              <PanelLeft className="w-4 h-4 stroke-[3] shrink-0" />
+              <span>SHOW STATIONS ({filteredToilets.length})</span>
             </button>
           )}
         </div>

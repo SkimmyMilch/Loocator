@@ -87,7 +87,18 @@ export const MapView: React.FC<MapViewProps> = ({
 
     mapInstanceRef.current = map;
 
+    // Attach ResizeObserver to invalidate map size when container resizes
+    const observer = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    });
+    if (mapContainerRef.current) {
+      observer.observe(mapContainerRef.current);
+    }
+
     return () => {
+      observer.disconnect();
       map.remove();
       mapInstanceRef.current = null;
     };

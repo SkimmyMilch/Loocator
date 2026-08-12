@@ -16,6 +16,8 @@ interface NavbarProps {
   onLocateMe: () => void;
   totalResultsCount: number;
   onOpenAdminPanel: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -32,6 +34,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLocateMe,
   totalResultsCount,
   onOpenAdminPanel,
+  isSidebarOpen,
+  onToggleSidebar,
 }) => {
   // Calculate active filter count excluding search
   const activeFiltersCount = [
@@ -49,9 +53,9 @@ export const Navbar: React.FC<NavbarProps> = ({
   ].filter(Boolean).length;
 
   return (
-    <div className="absolute top-0 left-0 right-0 z-30 p-2 sm:p-4 flex flex-col gap-2 pointer-events-none bg-transparent max-w-full overflow-hidden">
+    <div className="w-full shrink-0 z-30 bg-zinc-900 border-b-4 border-black p-2 sm:px-4 sm:py-2.5 flex flex-col gap-2 text-white shadow-md max-w-full overflow-hidden">
       {/* Main Top Bar */}
-      <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 max-w-7xl mx-auto w-full pointer-events-auto">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 max-w-7xl mx-auto w-full">
         
         {/* Brand & Logo Card */}
         <div className="flex items-center gap-1.5 bg-white border-2 border-black p-1 sm:p-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] shrink-0">
