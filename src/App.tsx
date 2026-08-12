@@ -116,13 +116,25 @@ export default function App() {
       setToastMessage('🛰️ Requesting device GPS location...');
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          const userPos = {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            addressName: 'Your Device Location',
-          };
-          setUserLocation(userPos);
-          setToastMessage(`📍 Located your device at (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
+          const lat = pos?.coords?.latitude;
+          const lng = pos?.coords?.longitude;
+          if (
+            typeof lat === 'number' &&
+            !isNaN(lat) &&
+            isFinite(lat) &&
+            typeof lng === 'number' &&
+            !isNaN(lng) &&
+            isFinite(lng)
+          ) {
+            setUserLocation({
+              lat,
+              lng,
+              addressName: 'Your Device Location',
+            });
+            setToastMessage(`📍 Located your device at (${lat.toFixed(4)}, ${lng.toFixed(4)})`);
+          } else {
+            setToastMessage('⚠️ Device GPS returned invalid coordinates.');
+          }
         },
         (err) => {
           console.warn('Geolocation error:', err);
@@ -146,11 +158,22 @@ export default function App() {
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
-          setUserLocation({
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-            addressName: 'Your Device Location',
-          });
+          const lat = pos?.coords?.latitude;
+          const lng = pos?.coords?.longitude;
+          if (
+            typeof lat === 'number' &&
+            !isNaN(lat) &&
+            isFinite(lat) &&
+            typeof lng === 'number' &&
+            !isNaN(lng) &&
+            isFinite(lng)
+          ) {
+            setUserLocation({
+              lat,
+              lng,
+              addressName: 'Your Device Location',
+            });
+          }
         },
         (err) => {
           console.log('Initial location permission prompt response:', err.message);

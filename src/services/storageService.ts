@@ -270,6 +270,13 @@ export const toggleAdminVerifyToilet = async (
 
 // Helper: Calculate distance between two lat/lng points in km (Haversine formula)
 export const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+  if (
+    typeof lat1 !== 'number' || typeof lon1 !== 'number' ||
+    typeof lat2 !== 'number' || typeof lon2 !== 'number' ||
+    isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)
+  ) {
+    return 0;
+  }
   const R = 6371; // Radius of earth in km
   const dLat = (lat2 - lat1) * (Math.PI / 180);
   const dLon = (lon2 - lon1) * (Math.PI / 180);
@@ -277,7 +284,8 @@ export const calculateDistanceKm = (lat1: number, lon1: number, lat2: number, lo
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return Number((R * c).toFixed(2));
+  const dist = R * c;
+  return isNaN(dist) ? 0 : Number(dist.toFixed(2));
 };
 
 export const filterToilets = (toilets: ToiletLocation[], filters: FilterState, userLat?: number, userLng?: number): ToiletLocation[] => {
@@ -390,9 +398,13 @@ export const filterToilets = (toilets: ToiletLocation[], filters: FilterState, u
       return (a.isPaid ? 1 : 0) - (b.isPaid ? 1 : 0);
     }
     // Default or distance sort
-    if (userLat !== undefined && userLng !== undefined) {
-      const distA = calculateDistanceKm(userLat, userLng, a.coordinates.lat, a.coordinates.lng);
-      const distB = calculateDistanceKm(userLat, userLng, b.coordinates.lat, b.coordinates.lng);
+    if (userLat !== undefined && userLng !== undefined && !isNaN(userLat) && !isNaN(userLng)) {
+      const distA = (a.coordinates && !isNaN(a.coordinates.lat) && !isNaN(a.coordinates.lng))
+        ? calculateDistanceKm(userLat, userLng, a.coordinates.lat, a.coordinates.lng)
+        : 9999;
+      const distB = (b.coordinates && !isNaN(b.coordinates.lat) && !isNaN(b.coordinates.lng))
+        ? calculateDistanceKm(userLat, userLng, b.coordinates.lat, b.coordinates.lng)
+        : 9999;
       return distA - distB;
     }
     return 0;

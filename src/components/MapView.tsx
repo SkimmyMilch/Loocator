@@ -36,6 +36,13 @@ const TILE_URLS: Record<MapTileStyle, { url: string; attribution: string }> = {
   },
 };
 
+// Helper to validate coordinates before passing to Leaflet
+const isValidLat = (num: any): num is number =>
+  typeof num === 'number' && !isNaN(num) && isFinite(num) && num >= -90 && num <= 90;
+
+const isValidLng = (num: any): num is number =>
+  typeof num === 'number' && !isNaN(num) && isFinite(num) && num >= -180 && num <= 180;
+
 export const MapView: React.FC<MapViewProps> = ({
   toilets,
   selectedToiletId,
@@ -63,8 +70,8 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     // Default center: Jakarta Pusat (Grand Indonesia area)
-    const initialLat = userLocation?.lat ?? -6.1953;
-    const initialLng = userLocation?.lng ?? 106.8208;
+    const initialLat = (userLocation && isValidLat(userLocation.lat)) ? userLocation.lat : -6.1953;
+    const initialLng = (userLocation && isValidLng(userLocation.lng)) ? userLocation.lng : 106.8208;
 
     const map = L.map(mapContainerRef.current, {
       center: [initialLat, initialLng],
@@ -129,7 +136,7 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (!tempPinCoords) {
+    if (!tempPinCoords || !isValidLat(tempPinCoords.lat) || !isValidLng(tempPinCoords.lng)) {
       if (tempPinMarkerRef.current) {
         map.removeLayer(tempPinMarkerRef.current);
         tempPinMarkerRef.current = null;
@@ -155,7 +162,7 @@ export const MapView: React.FC<MapViewProps> = ({
         tempMarker.on('dragend', (event) => {
           const marker = event.target;
           const position = marker.getLatLng();
-          if (onPinDropped) {
+          if (onPinDropped && isValidLat(position.lat) && isValidLng(position.lng)) {
             onPinDropped({ lat: position.lat, lng: position.lng });
           }
         });
@@ -179,6 +186,10 @@ export const MapView: React.FC<MapViewProps> = ({
     });
 
     toilets.forEach((toilet) => {
+      if (!toilet || !toilet.coordinates || !isValidLat(toilet.coordinates.lat) || !isValidLng(toilet.coordinates.lng)) {
+        return;
+      }
+
       const isSelected = toilet.id === selectedToiletId;
       
       // Pin Color Code Rules:
@@ -203,7 +214,7 @@ export const MapView: React.FC<MapViewProps> = ({
       const customHtml = `
         <div class="relative cursor-pointer transition-transform duration-200 -translate-x-1/2 -translate-y-1/2 ${scaleClass}">
           <div class="w-9 h-9 ${pinBgColor} border-2 border-black font-black text-xs shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] ${selectionRing} flex items-center justify-center select-none text-center">
-            <span class="text-sm font-black leading-none">${toilet.ratingCleanliness.toFixed(1)}</span>
+            <span class="text-sm font-black leading-none">${toilet.ratingCleanliness ? toilet.ratingCleanliness.toFixed(1) : '4.0'}</span>
           </div>
         </div>
       `;
@@ -238,7 +249,7 @@ export const MapView: React.FC<MapViewProps> = ({
     if (!map || !selectedToiletId) return;
 
     const selectedToilet = toilets.find((t) => t.id === selectedToiletId);
-    if (selectedToilet) {
+    if (selectedToilet && selectedToilet.coordinates && isValidLat(selectedToilet.coordinates.lat) && isValidLng(selectedToilet.coordinates.lng)) {
       map.flyTo([selectedToilet.coordinates.lat, selectedToilet.coordinates.lng], 16, {
         animate: true,
         duration: 1.2,
@@ -251,15 +262,14 @@ export const MapView: React.FC<MapViewProps> = ({
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    if (userLocation) {
+    if (userLocation && isValidLat(userLocation.lat) && isValidLng(userLocation.lng)) {
       const userIcon = L.divIcon({
         className: 'user-location-marker',
         html: `
           <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
-            <div class="w-8 h-8 bg-blue-500/40 border-2 border-black rounded-full animate-ping absolute"></div>
-            <div class="w-5 h-5 bg-blue-600 border-2 border-black rounded-full shadow-md flex items-center justify-center text-white text-[9px] font-black">
-              YOU
-            </div>
+            <div class="w-8 h-8 bg-blue-500/30 rounded-full animate-ping absolute"></div>
+            <div class="w-7 h-7 bg-blue-500/25 rounded-full absolute border border-blue-400/50"></div>
+            <div class="w-4 h-4 bg-blue-600 rounded-full border-2 border-white shadow-md relative z-10"></div>
           </div>
         `,
         iconSize: [0, 0],
@@ -292,7 +302,15 @@ export const MapView: React.FC<MapViewProps> = ({
       routePolylineRef.current = null;
     }
 
-    if (activeRouteDestination && userLocation) {
+    if (
+      activeRouteDestination &&
+      activeRouteDestination.coordinates &&
+      isValidLat(activeRouteDestination.coordinates.lat) &&
+      isValidLng(activeRouteDestination.coordinates.lng) &&
+      userLocation &&
+      isValidLat(userLocation.lat) &&
+      isValidLng(userLocation.lng)
+    ) {
       const start: [number, number] = [userLocation.lat, userLocation.lng];
       const end: [number, number] = [activeRouteDestination.coordinates.lat, activeRouteDestination.coordinates.lng];
 

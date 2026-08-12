@@ -99,7 +99,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             className={`px-2 py-1.5 sm:px-3 sm:py-2 border-2 border-black font-black text-[11px] sm:text-xs uppercase transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] flex items-center gap-1.5 active:translate-x-0.5 active:translate-y-0.5 ${
               isAddPinMode
                 ? 'bg-yellow-400 text-black ring-2 ring-black animate-pulse'
-                : 'bg-black text-white hover:bg-yellow-400 hover:text-black'
+                : 'bg-blue-600 text-white hover:bg-yellow-400 hover:text-black'
             }`}
             title={isAddPinMode ? 'Tap Map to Drop Pin' : 'Add Toilet Station'}
           >
