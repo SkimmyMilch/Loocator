@@ -55,7 +55,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <div className="w-full shrink-0 z-30 bg-zinc-900 border-b-4 border-black p-2 sm:px-4 sm:py-2.5 flex flex-col gap-2 text-white shadow-md max-w-full overflow-hidden">
       {/* Main Top Bar */}
-      <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 max-w-7xl mx-auto w-full">
+      <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 w-full">
         
         {/* Brand & Logo Card */}
         <div className="flex items-center gap-1.5 bg-white border-2 border-black p-1 sm:p-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] shrink-0">
@@ -73,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Floating Search Input Card */}
-        <div className="flex-1 min-w-0 max-w-xl relative">
+        <div className="flex-1 min-w-0 max-w-2xl relative">
           <div className="relative flex items-center bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] sm:shadow-[3px_3px_0px_0px_rgba(0,0,0,1)] focus-within:bg-yellow-300 transition-colors">
             <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-2 sm:ml-3 text-black shrink-0 stroke-[2.5]" />
             <input
@@ -139,7 +139,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       </div>
 
       {/* Category Quick Filter Pills Row */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 max-w-7xl mx-auto w-full pointer-events-auto no-scrollbar">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 w-full pointer-events-auto no-scrollbar">
         
         {/* Full Filter Drawer Toggle Button */}
         <button
