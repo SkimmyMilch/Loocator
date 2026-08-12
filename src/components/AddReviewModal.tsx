@@ -5,7 +5,7 @@ import { X, Star, Send, ShieldCheck, UserCheck } from 'lucide-react';
 interface AddReviewModalProps {
   toilet: ToiletLocation;
   onClose: () => void;
-  onSubmitReview: (review: Omit<Review, 'id' | 'createdAt' | 'helpfulCount'>) => void;
+  onSubmitReview: (review: Omit<Review, 'id' | 'createdAt' | 'helpfulCount'>) => Promise<void> | void;
 }
 
 export const AddReviewModal: React.FC<AddReviewModalProps> = ({
@@ -22,31 +22,39 @@ export const AddReviewModal: React.FC<AddReviewModalProps> = ({
   const [isWet, setIsWet] = useState<boolean>(toilet.wetDry === 'wet');
   const [comment, setComment] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!comment.trim()) {
-      setErrorMsg('Please write a brief comment about your experience.');
-      return;
+    setErrorMsg('');
+    setIsSubmitting(true);
+
+    try {
+      const finalComment = comment.trim() || `Visited the ${genderSection.toLowerCase()} restroom section. Rated cleanliness ${ratingCleanliness}/5 and accessibility ${ratingAccessibility}/5.`;
+
+      await onSubmitReview({
+        toiletId: toilet.id,
+        genderSection,
+        ratingCleanliness,
+        ratingAccessibility,
+        bidetType,
+        closetType,
+        soapStatus,
+        isWet,
+        comment: finalComment,
+      });
+
+      onClose();
+    } catch (err: any) {
+      console.error('Error submitting review:', err);
+      setErrorMsg(err?.message || 'Failed to submit review. Please try again.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    onSubmitReview({
-      toiletId: toilet.id,
-      genderSection,
-      ratingCleanliness,
-      ratingAccessibility,
-      bidetType,
-      closetType,
-      soapStatus,
-      isWet,
-      comment: comment.trim(),
-    });
-
-    onClose();
   };
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
+    <div className="fixed inset-0 z-[1050] flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm overflow-hidden animate-fadeIn">
       <div className="relative w-full max-w-lg bg-white border-4 border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] overflow-hidden flex flex-col max-h-[88dvh] sm:max-h-[90vh] my-auto text-black">
         
         {/* Header */}
@@ -253,14 +261,13 @@ export const AddReviewModal: React.FC<AddReviewModalProps> = ({
 
           {/* Comment */}
           <div className="space-y-1">
-            <label className="text-xs font-black uppercase text-black">ANONYMOUS REVIEW & OBSERVATIONS *</label>
+            <label className="text-xs font-black uppercase text-black">ANONYMOUS REVIEW & OBSERVATIONS (OPTIONAL)</label>
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               rows={3}
               placeholder="Write details on cleanliness, stall space, water pressure, or locks..."
               className="w-full p-3 bg-white border-2 border-black text-sm font-medium text-black placeholder-zinc-400 focus:outline-none focus:bg-yellow-100 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]"
-              required
             />
           </div>
 
@@ -268,10 +275,11 @@ export const AddReviewModal: React.FC<AddReviewModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              className="w-full py-3 bg-black text-white hover:bg-yellow-400 hover:text-black border-2 border-black font-black text-xs uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
+              disabled={isSubmitting}
+              className="w-full py-3 bg-black text-white hover:bg-yellow-400 hover:text-black disabled:bg-zinc-400 disabled:text-zinc-700 border-2 border-black font-black text-xs uppercase shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all flex items-center justify-center gap-2"
             >
               <Send className="w-4 h-4 stroke-[3]" />
-              <span>SUBMIT ANONYMOUS REVIEW</span>
+              <span>{isSubmitting ? 'SUBMITTING REVIEW...' : 'SUBMIT ANONYMOUS REVIEW'}</span>
             </button>
           </div>
         </form>

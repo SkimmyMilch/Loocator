@@ -4,7 +4,7 @@ import { getBidetLabel, getClosetLabel, getSoapLabel, getWetDryLabel } from '../
 import { calculateDistanceKm } from '../services/storageService';
 import {
   X, Star, ShieldCheck, ShieldAlert, MapPin, Navigation, Compass, CheckCircle2,
-  XCircle, MessageSquare, Plus, UserCheck
+  XCircle, MessageSquare, Plus, UserCheck, Trash2
 } from 'lucide-react';
 
 interface ToiletDetailModalProps {
@@ -15,6 +15,7 @@ interface ToiletDetailModalProps {
   onGetDirections: (toilet: ToiletLocation) => void;
   isAdmin: boolean;
   onAdminToggleVerify: (toiletId: string, isVerified: boolean, note?: string) => void;
+  onDeleteStation?: (toiletId: string) => void;
   userLocation: UserLocation | null;
 }
 
@@ -26,6 +27,7 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
   onGetDirections,
   isAdmin,
   onAdminToggleVerify,
+  onDeleteStation,
   userLocation,
 }) => {
   const [adminNoteInput, setAdminNoteInput] = useState(toilet.adminNote || '');
@@ -93,24 +95,41 @@ export const ToiletDetailModal: React.FC<ToiletDetailModalProps> = ({
           
           {/* Admin Verification Control Box */}
           {isAdmin && (
-            <div className="p-4 bg-yellow-300 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
-              <div className="flex items-center justify-between gap-2">
+            <div className="p-4 bg-yellow-300 border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-3">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-2 text-black font-black text-xs uppercase">
                   <ShieldCheck className="w-4 h-4 stroke-[3]" />
                   <span>ADMIN VERIFICATION PANEL</span>
                 </div>
-                <button
-                  onClick={() => {
-                    onAdminToggleVerify(toilet.id, !toilet.isVerified, adminNoteInput);
-                  }}
-                  className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
-                    toilet.isVerified
-                      ? 'bg-red-500 text-white hover:bg-black'
-                      : 'bg-black text-white hover:bg-yellow-400 hover:text-black'
-                  }`}
-                >
-                  {toilet.isVerified ? 'REVOKE VERIFIED STATUS' : 'GRANT VERIFIED STATUS'}
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      onAdminToggleVerify(toilet.id, !toilet.isVerified, adminNoteInput);
+                    }}
+                    className={`px-3 py-1 border-2 border-black text-xs font-black uppercase transition-all shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] ${
+                      toilet.isVerified
+                        ? 'bg-zinc-800 text-white hover:bg-black'
+                        : 'bg-black text-white hover:bg-yellow-400 hover:text-black'
+                    }`}
+                  >
+                    {toilet.isVerified ? 'REVOKE STATUS' : 'GRANT STATUS'}
+                  </button>
+
+                  {onDeleteStation && (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Are you sure you want to PERMANENTLY DELETE station "${toilet.name}"?`)) {
+                          onDeleteStation(toilet.id);
+                          onClose();
+                        }
+                      }}
+                      className="px-3 py-1 bg-red-600 text-white border-2 border-black text-xs font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:bg-black transition-all flex items-center gap-1"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>DELETE</span>
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Admin Note Input */}

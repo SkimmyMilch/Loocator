@@ -7,6 +7,7 @@ import {
   onSnapshot,
   setDoc,
   updateDoc,
+  deleteDoc,
   getDocs,
   writeBatch
 } from 'firebase/firestore';
@@ -14,6 +15,24 @@ import {
 const STORAGE_KEYS = {
   TOILETS: 'loolocator_toilets_v1',
   REVIEWS: 'loolocator_reviews_v1',
+};
+
+// Helper to recursively remove undefined properties before saving to Firestore
+const cleanForFirestore = <T>(obj: T): T => {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(cleanForFirestore) as unknown as T;
+  }
+  const cleaned: Record<string, any> = {};
+  for (const key of Object.keys(obj as object)) {
+    const val = (obj as any)[key];
+    if (val !== undefined) {
+      cleaned[key] = cleanForFirestore(val);
+    }
+  }
+  return cleaned as T;
 };
 
 // Local storage caching helpers
@@ -69,12 +88,12 @@ const seedFirestoreIfEmpty = async () => {
       
       INITIAL_TOILETS.forEach(t => {
         const ref = doc(db, 'toilets', t.id);
-        batch.set(ref, t);
+        batch.set(ref, cleanForFirestore(t));
       });
 
       INITIAL_REVIEWS.forEach(r => {
         const ref = doc(db, 'reviews', r.id);
-        batch.set(ref, r);
+        batch.set(ref, cleanForFirestore(r));
       });
 
       await batch.commit();
@@ -149,7 +168,7 @@ export const addToiletLocation = async (
 
   // Write to Firestore first
   try {
-    await setDoc(doc(db, 'toilets', id), toilet);
+    await setDoc(doc(db, 'toilets', id), cleanForFirestore(toilet));
   } catch (err) {
     console.error('Failed to save new toilet to Firestore:', err);
   }
@@ -177,19 +196,23 @@ export const addReviewToToilet = async (
     helpfulCount: 0,
   };
 
-  const updatedReviews = [review, ...currentReviews];
+  const toiletsList = (currentToilets && currentToilets.length > 0) ? currentToilets : getStoredToilets();
+  const reviewsList = (currentReviews && currentReviews.length > 0) ? currentReviews : getStoredReviews();
+
+  const updatedReviews = [review, ...reviewsList];
 
   // Recalculate target toilet ratings
   const toiletReviews = updatedReviews.filter(r => r.toiletId === reviewData.toiletId);
-  const sumCleanliness = toiletReviews.reduce((acc, r) => acc + r.ratingCleanliness, 0);
-  const sumAccessibility = toiletReviews.reduce((acc, r) => acc + r.ratingAccessibility, 0);
+  const sumCleanliness = toiletReviews.reduce((acc, r) => acc + (r.ratingCleanliness || 0), 0);
+  const sumAccessibility = toiletReviews.reduce((acc, r) => acc + (r.ratingAccessibility || 0), 0);
 
   const maleReviews = toiletReviews.filter(r => r.genderSection === 'Male');
   const femaleReviews = toiletReviews.filter(r => r.genderSection === 'Female');
+  const unisexReviews = toiletReviews.filter(r => r.genderSection === 'Unisex');
 
-  const targetToilet = currentToilets.find(t => t.id === reviewData.toiletId);
+  const targetToilet = toiletsList.find(t => t.id === reviewData.toiletId);
   if (!targetToilet) {
-    throw new Error('Toilet not found');
+    throw new Error('Toilet location not found');
   }
 
   const updatedMaleRating = maleReviews.length > 0
@@ -200,21 +223,26 @@ export const addReviewToToilet = async (
     ? Number((femaleReviews.reduce((acc, r) => acc + r.ratingCleanliness, 0) / femaleReviews.length).toFixed(1))
     : targetToilet.ratingFemale;
 
+  const updatedUnisexRating = unisexReviews.length > 0
+    ? Number((unisexReviews.reduce((acc, r) => acc + r.ratingCleanliness, 0) / unisexReviews.length).toFixed(1))
+    : targetToilet.ratingUnisex;
+
   const updatedToilet: ToiletLocation = {
     ...targetToilet,
     totalReviews: toiletReviews.length,
     ratingCleanliness: Number((sumCleanliness / toiletReviews.length).toFixed(1)),
     ratingAccessibility: Number((sumAccessibility / toiletReviews.length).toFixed(1)),
-    ratingMale: updatedMaleRating,
-    ratingFemale: updatedFemaleRating,
+    ...(updatedMaleRating !== undefined ? { ratingMale: updatedMaleRating } : {}),
+    ...(updatedFemaleRating !== undefined ? { ratingFemale: updatedFemaleRating } : {}),
+    ...(updatedUnisexRating !== undefined ? { ratingUnisex: updatedUnisexRating } : {}),
     updatedAt: now,
   };
 
-  // Write review and updated toilet to Firestore
+  // Write review and updated toilet to Firestore cleanly without undefined fields
   try {
     const batch = writeBatch(db);
-    batch.set(doc(db, 'reviews', reviewId), review);
-    batch.set(doc(db, 'toilets', updatedToilet.id), updatedToilet);
+    batch.set(doc(db, 'reviews', reviewId), cleanForFirestore(review));
+    batch.set(doc(db, 'toilets', updatedToilet.id), cleanForFirestore(updatedToilet));
     await batch.commit();
   } catch (err) {
     console.error('Failed to sync review & toilet rating to Firestore:', err);
@@ -222,7 +250,7 @@ export const addReviewToToilet = async (
 
   // Update local storage
   saveReviewsToLocal(updatedReviews);
-  const updatedToiletsList = currentToilets.map(t => t.id === updatedToilet.id ? updatedToilet : t);
+  const updatedToiletsList = toiletsList.map(t => t.id === updatedToilet.id ? updatedToilet : t);
   saveToiletsToLocal(updatedToiletsList);
 
   return { review, updatedToilet };
@@ -235,7 +263,8 @@ export const toggleAdminVerifyToilet = async (
   currentToilets: ToiletLocation[],
   adminNote?: string
 ): Promise<ToiletLocation> => {
-  const target = currentToilets.find(t => t.id === toiletId);
+  const toiletsList = (currentToilets && currentToilets.length > 0) ? currentToilets : getStoredToilets();
+  const target = toiletsList.find(t => t.id === toiletId);
   if (!target) {
     throw new Error('Toilet not found');
   }
@@ -251,21 +280,39 @@ export const toggleAdminVerifyToilet = async (
   };
 
   try {
-    await updateDoc(doc(db, 'toilets', toiletId), {
+    await updateDoc(doc(db, 'toilets', toiletId), cleanForFirestore({
       isVerified,
       verifiedAt: isVerified ? now : null,
       verifiedBy: isVerified ? 'LooLocator Official Admin' : null,
       adminNote: adminNote !== undefined ? adminNote : (target.adminNote || null),
       updatedAt: now,
-    });
+    }));
   } catch (err) {
     console.error('Failed to update admin verification in Firestore:', err);
   }
 
-  const updatedToilets = currentToilets.map(t => t.id === toiletId ? updatedToilet : t);
+  const updatedToilets = toiletsList.map(t => t.id === toiletId ? updatedToilet : t);
   saveToiletsToLocal(updatedToilets);
 
   return updatedToilet;
+};
+
+// Admin Action: Delete Toilet Station
+export const deleteToiletStation = async (
+  toiletId: string,
+  currentToilets: ToiletLocation[]
+): Promise<ToiletLocation[]> => {
+  const toiletsList = (currentToilets && currentToilets.length > 0) ? currentToilets : getStoredToilets();
+  const updatedToilets = toiletsList.filter(t => t.id !== toiletId);
+
+  try {
+    await deleteDoc(doc(db, 'toilets', toiletId));
+  } catch (err) {
+    console.error('Failed to delete toilet station from Firestore:', err);
+  }
+
+  saveToiletsToLocal(updatedToilets);
+  return updatedToilets;
 };
 
 // Helper: Calculate distance between two lat/lng points in km (Haversine formula)

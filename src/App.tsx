@@ -8,6 +8,7 @@ import {
   addToiletLocation,
   addReviewToToilet,
   toggleAdminVerifyToilet,
+  deleteToiletStation,
   filterToilets,
   resetStorageToDefaults,
 } from './services/storageService';
@@ -254,6 +255,17 @@ export default function App() {
     );
   };
 
+  const handleDeleteToiletStation = async (toiletId: string) => {
+    const deletedToilet = toilets.find((t) => t.id === toiletId);
+    const updatedToilets = await deleteToiletStation(toiletId, toilets);
+    setToilets(updatedToilets);
+    if (selectedToiletId === toiletId) {
+      setSelectedToiletId(null);
+      setIsDetailModalOpen(false);
+    }
+    setToastMessage(`🗑️ Station "${deletedToilet?.name || 'Toilet'}" deleted.`);
+  };
+
   const handleGetDirections = (toilet: ToiletLocation) => {
     setActiveRouteDestination(toilet);
     setIsDirectionsModalOpen(true);
@@ -442,6 +454,7 @@ export default function App() {
           onGetDirections={handleGetDirections}
           isAdmin={isAdmin}
           onAdminToggleVerify={handleAdminToggleVerify}
+          onDeleteStation={handleDeleteToiletStation}
           userLocation={userLocation}
         />
       )}
@@ -500,7 +513,7 @@ export default function App() {
           toilets={toilets}
           onClose={() => setIsAdminPanelOpen(false)}
           onToggleVerify={handleAdminToggleVerify}
-          onResetData={handleResetDemoData}
+          onDeleteStation={handleDeleteToiletStation}
         />
       )}
 

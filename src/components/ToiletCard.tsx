@@ -1,7 +1,7 @@
 import React from 'react';
 import { ToiletLocation, UserLocation } from '../types';
 import { calculateDistanceKm } from '../services/storageService';
-import { getBidetLabel, getClosetLabel } from '../utils/formatters';
+import { getBidetLabel, getClosetLabel, formatPriceOnly } from '../utils/formatters';
 import { ShieldCheck, MapPin, Navigation, ArrowRight, Star } from 'lucide-react';
 
 interface ToiletCardProps {
@@ -67,7 +67,7 @@ export const ToiletCard: React.FC<ToiletCardProps> = ({
               <span>{toilet.ratingCleanliness.toFixed(1)}</span>
             </div>
             <span className="text-[10px] font-black uppercase px-2 py-0.5 bg-zinc-100 border border-black text-black">
-              {toilet.isPaid ? toilet.costText || 'Paid' : 'Free'}
+              {formatPriceOnly(toilet.isPaid, toilet.costText)}
             </span>
           </div>
         </div>

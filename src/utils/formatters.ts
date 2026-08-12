@@ -66,3 +66,19 @@ export const getCleanlinessBadge = (rating: number): { text: string; bg: string;
   return { text: 'Needs Attention', bg: 'bg-red-500', border: 'border-black', textCol: 'text-white' };
 };
 
+export const formatPriceOnly = (isPaid?: boolean, costText?: string): string => {
+  if (!isPaid && !costText) return 'FREE';
+  if (!isPaid && costText) {
+    let cleaned = costText.replace(/\s*\(.*?\)/g, '').trim();
+    if (cleaned.includes(' - ')) cleaned = cleaned.split(' - ')[0].trim();
+    return cleaned || 'FREE';
+  }
+  if (isPaid && !costText) return 'PAID';
+
+  let cleaned = costText ? costText.replace(/\s*\(.*?\)/g, '').trim() : '';
+  if (cleaned.includes(' - ')) {
+    cleaned = cleaned.split(' - ')[0].trim();
+  }
+  return cleaned || 'PAID';
+};
+
